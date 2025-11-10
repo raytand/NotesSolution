@@ -2,6 +2,7 @@
 using Notes.Application.DTOs;
 using Notes.Domain;
 using Notes.Infrastructure;
+using Confluent.Kafka;
 
 namespace Notes.Application
 {
@@ -9,7 +10,14 @@ namespace Notes.Application
     public class NoteService : INoteService
     {
         private readonly NotesDbContext _db;
-        public NoteService(NotesDbContext db) => _db = db;
+        private readonly IProducer<Null, string> _producer;
+
+        public NoteService(NotesDbContext db, IProducer<Null, string> producer)
+        {
+            _db = db;
+            _producer = producer;
+        }
+
 
         public async Task<IEnumerable<NoteDto>> GetAllAsync()
         {
@@ -36,7 +44,8 @@ namespace Notes.Application
             };
             _db.Notes.Add(note);
             await _db.SaveChangesAsync();
-
+            await _producer.ProduceAsync("notes-topic", new Message<Null, string> { Value = $"Note created: {note.Id}" });
+            _producer.Flush(TimeSpan.FromSeconds(5));
             return new NoteDto
             {
                 Id = note.Id,

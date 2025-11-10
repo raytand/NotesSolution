@@ -1,3 +1,4 @@
+using Confluent.Kafka;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Notes.Application;
@@ -5,9 +6,18 @@ using Notes.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
 var connectionString = builder.Configuration["ConnectionStrings:Default"];
 builder.Services.AddDbContext<NotesDbContext>(options =>
     options.UseSqlServer(connectionString));
+
+var kafkaBroker = builder.Configuration["Kafka:BootstrapServers"] ?? "kafka:9092";
+builder.Services.AddSingleton<IProducer<Null, string>>(
+    new ProducerBuilder<Null, string>(new ProducerConfig
+    {
+        BootstrapServers = kafkaBroker
+    }).Build()
+);
 
 builder.Services.AddScoped<INoteService, NoteService>();
 builder.Services.AddControllers();
@@ -31,7 +41,7 @@ using (var scope = app.Services.CreateScope())
         {
             retries--;
             Console.WriteLine("Waiting for SQL Server...");
-            System.Threading.Thread.Sleep(3000);
+            Thread.Sleep(3000);
         }
     }
 }

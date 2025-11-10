@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Notes.Kafka": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
