@@ -2,7 +2,6 @@
 using Notes.Application;
 using Notes.Application.DTOs;
 using Notes.Infrastructure;
-using Xunit;
 
 namespace Notes.Tests
 {

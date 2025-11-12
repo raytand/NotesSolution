@@ -3,6 +3,7 @@ using Notes.Application.DTOs;
 using Notes.Domain;
 using Notes.Infrastructure;
 using Confluent.Kafka;
+using System.Text.Json;
 
 namespace Notes.Application
 {
@@ -44,7 +45,8 @@ namespace Notes.Application
             };
             _db.Notes.Add(note);
             await _db.SaveChangesAsync();
-            await _producer.ProduceAsync("notes-topic", new Message<Null, string> { Value = $"Note created: {note.Id}" });
+            var json = JsonSerializer.Serialize(new { note.Id, note.Title });
+            await _producer.ProduceAsync("notes-topic-1", new Message<Null, string> { Value = json });
             _producer.Flush(TimeSpan.FromSeconds(5));
             return new NoteDto
             {

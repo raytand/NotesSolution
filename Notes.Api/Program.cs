@@ -15,7 +15,11 @@ var kafkaBroker = builder.Configuration["Kafka:BootstrapServers"] ?? "kafka:9092
 builder.Services.AddSingleton<IProducer<Null, string>>(
     new ProducerBuilder<Null, string>(new ProducerConfig
     {
-        BootstrapServers = kafkaBroker
+        BootstrapServers = kafkaBroker,
+        Acks = Acks.All,
+        EnableIdempotence = true,
+        MessageSendMaxRetries = 10,
+        ReconnectBackoffMs = 500
     }).Build()
 );
 

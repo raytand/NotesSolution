@@ -1,39 +1,29 @@
-﻿using Confluent.Kafka;
+﻿using Notes.Kafka.Handlers;
+using Notes.Kafka.Messaging;
 
-var broker = Environment.GetEnvironmentVariable("Kafka__BootstrapServers") ?? "kafka:9092";
-
-var config = new ConsumerConfig
+namespace KafkaConsumerApp
 {
-    BootstrapServers = broker,
-    GroupId = "notes-group",
-    AutoOffsetReset = AutoOffsetReset.Earliest
-};
-
-using var consumer = new ConsumerBuilder<Null, string>(config).Build();
-consumer.Subscribe("notes-topic");
-
-Console.WriteLine("Kafka consumer started...");
-
-var logPath = Path.Combine(AppContext.BaseDirectory, "Logs", "kafka.log");
-Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
-
-while (true)
-{
-    try
+    class Program
     {
-        var cr = consumer.Consume();
-        var msg = $"[{DateTime.UtcNow:O}] {cr.Message.Value}";
-        Console.WriteLine(msg);
-        File.AppendAllLines(logPath, new[] { msg });
-    }
-    catch (ConsumeException e)
-    {
-        Console.WriteLine($"Consume error: {e.Error.Reason}");
-        Thread.Sleep(1000);
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Error: {ex.Message}");
-        Thread.Sleep(1000);
+        static void Main(string[] args)
+        {
+            var handler = new NoteCreatedHandler();
+            var consumer = new NotesConsumer(handler);
+            var cts = new CancellationTokenSource();
+
+            Task.Run(() => consumer.StartAsync(cts.Token));
+
+            Console.WriteLine("Kafka consumer running... Press Ctrl+C to exit.");
+            
+            using var waitHandle = new ManualResetEvent(false);
+            Console.CancelKeyPress += (s, e) =>
+            {
+                e.Cancel = true;
+                cts.Cancel();
+                waitHandle.Set();
+            };
+
+            waitHandle.WaitOne();
+        }
     }
 }
